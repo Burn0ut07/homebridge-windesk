@@ -1,6 +1,6 @@
-const Service, Characteristic;
 const request = require('request')
 const url = require('url')
+var Service, Characteristic;
 
 module.exports = function (homebridge) {
 	Service = homebridge.hap.Service;
@@ -31,7 +31,7 @@ class windesk {
 		switchService
 			.getCharacteristic(Characteristic.On)
 				.on('get', this.getSwitchOnCharacteristic.bind(this))
-				.on('get', this.setSwitchOnCharacteristic.bind(this));
+				.on('set', this.setSwitchOnCharacteristic.bind(this));
 
 		this.informationService = informationService;
 		this.switchService = switchService;
@@ -40,14 +40,14 @@ class windesk {
 
 	getSwitchOnCharacteristic(next) {
 		const me = this;
-		me.log('State: ' + me.state)
-		return next(null, state);
+		me.log('State: ' + me.currentState)
+		return next(null, me.currentState);
 	}
 
 	setSwitchOnCharacteristic(on, next) {
 		const me = this;
 		me.log("On: " + on);
-		me.state = !me.state;
+		me.currentState = !me.currentState;
 		return next();
 	}
 };
