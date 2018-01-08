@@ -1,0 +1,20 @@
+{
+	"name": "homebridge-windesk",
+	"version": "0.1.0",
+	"description": "Windows desktop switch plugin for homebridge",
+	"license": "ISC",
+	"keywords": [
+		"homebridge-plugin"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Burn0ut07/homebridge-windesk.git"
+	},
+	"engines": {
+		"node": ">=4.3.2",
+		"homebridge": ">=0.4.35"
+	},
+	"dependencies": {
+		"request": "^2.83.0"
+	}
+}
