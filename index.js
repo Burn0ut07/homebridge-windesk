@@ -3,76 +3,77 @@ const url = require('url')
 var Service, Characteristic;
 
 module.exports = function (homebridge) {
-	Service = homebridge.hap.Service;
-	Characteristic = homebridge.hap.Characteristic;
-	homebridge.registerAccessory("windesk-plugin", "WindowsDesktopSwitch", windesk);
+    Service = homebridge.hap.Service;
+    Characteristic = homebridge.hap.Characteristic;
+    homebridge.registerAccessory("windesk-plugin", "WindowsDesktopSwitch", windesk);
 }
 
 class windesk {
-	constructor(log, config) {
-		this.log = log;
-		this.hostname = config['hostname'];
-		this.port = config['port'];
-		this.endpoint = url.parse("http://" + this.hostname + ":" + this.port + "/device");
-	}
+    constructor(log, config) {
+        this.log = log;
+        this.hostname = config['hostname'];
+        this.port = config['port'];
+        this.endpoint = url.parse("http://" + this.hostname + ":" + this.port + "/device");
+    }
 
-	getServices() {
-		let informationService = new Service.AccessoryInformation();
-		informationService
-			.setCharacteristic(Characteristic.Manufacturer, "JMF")
-			.setCharacteristic(Characteristic.Model, "W10")
-			.setCharacteristic(Characteristic.SerialNumber, "123-456-789");
+    getServices() {
+        let informationService = new Service.AccessoryInformation();
+        informationService
+            .setCharacteristic(Characteristic.Manufacturer, "JMF")
+            .setCharacteristic(Characteristic.Model, "W10")
+            .setCharacteristic(Characteristic.SerialNumber, "123-456-789");
 
-		let switchService = new Service.Switch("Windesk Switch");
-		switchService
-			.getCharacteristic(Characteristic.On)
-				.on('get', this.getSwitchOnCharacteristic.bind(this))
-				.on('set', this.setSwitchOnCharacteristic.bind(this));
+        let switchService = new Service.Switch("Windesk Switch");
+        switchService
+            .getCharacteristic(Characteristic.On)
+                .on('get', this.getSwitchOnCharacteristic.bind(this))
+                .on('set', this.setSwitchOnCharacteristic.bind(this));
 
-		this.informationService = informationService;
-		this.switchService = switchService;
-		return [informationService, switchService];
-	}
+        this.informationService = informationService;
+        this.switchService = switchService;
+        return [informationService, switchService];
+    }
 
-	getSwitchOnCharacteristic(next) {
-		const me = this;
+    getSwitchOnCharacteristic(next) {
+        const me = this;
 
-		request({
-			url: me.endpoint,
-			method: 'GET',
-		},
-		function (error, response, body) {
-			if (error) {
-				me.log('STATUS: ' + response.statusCode);
-				me.log(error.message);
-				return next(error);
-			}
+        request({
+            url: me.endpoint,
+            method: 'GET',
+        },
+        function (error, response, body) {
+            if (error) {
+                me.log('STATUS: ', response && response.statusCode);
+                me.log(error.message);
+                return next(error);
+            }
 
-			me.log('State: ' + me.currentState);
+            let resp = JSON.parse(body);
+            me.log('State: ' + resp.currentState);
 
-			return next(null, body.currentState);
-		});
-	}
+            return next(null, resp.currentState);
+        });
+    }
 
-	setSwitchOnCharacteristic(on, next) {
-		const me = this;
+    setSwitchOnCharacteristic(on, next) {
+        const me = this;
 
-		request({
-			url: me.endpoint,
-			body: {'targetState': on},
-			method: 'POST',
-			headers: {'Content-type': 'application/json'}
-		},
-		function (error, response) {
-			if (error) {
-				me.log('STATUS: ' + response.statusCode);
-				me.log(error.message);
-				return next(error);
-			}
+        me.log("On: " + on);
 
-			me.log("On: " + on);
+        request({
+            url: me.endpoint,
+            body: {'targetState': on},
+            method: 'POST',
+            headers: {'Content-type': 'application/json'}
+        },
+        function (error, response) {
+            if (error) {
+                me.log('STATUS: ', response && response.statusCode);
+                me.log(error.message);
+                return next(error);
+            }
 
-			return next();
-		});
-	}
+            return next();
+        });
+    }
 };
