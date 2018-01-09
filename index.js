@@ -8,16 +8,12 @@ module.exports = function (homebridge) {
 	homebridge.registerAccessory("windesk-plugin", "WindowsDesktopSwitch", windesk);
 }
 
-// function windesk(log, config) {
-// 	this.log = log;
-// 	this.hostname = config['hostname'];
-// }
-
 class windesk {
 	constructor(log, config) {
 		this.log = log;
 		this.hostname = config['hostname'];
-		this.currentState = false;
+		this.port = config['port'];
+		this.endpoint = url.parse("http://" + this.hostname + ":" + this.port + "/device");
 	}
 
 	getServices() {
@@ -40,14 +36,43 @@ class windesk {
 
 	getSwitchOnCharacteristic(next) {
 		const me = this;
-		me.log('State: ' + me.currentState)
-		return next(null, me.currentState);
+
+		request({
+			url: me.endpoint,
+			method: 'GET',
+		},
+		function (error, response, body) {
+			if (error) {
+				me.log('STATUS: ' + response.statusCode);
+				me.log(error.message);
+				return next(error);
+			}
+
+			me.log('State: ' + me.currentState);
+
+			return next(null, body.currentState);
+		});
 	}
 
 	setSwitchOnCharacteristic(on, next) {
 		const me = this;
-		me.log("On: " + on);
-		me.currentState = !me.currentState;
-		return next();
+
+		request({
+			url: me.endpoint,
+			body: {'targetState': on},
+			method: 'POST',
+			headers: {'Content-type': 'application/json'}
+		},
+		function (error, response) {
+			if (error) {
+				me.log('STATUS: ' + response.statusCode);
+				me.log(error.message);
+				return next(error);
+			}
+
+			me.log("On: " + on);
+
+			return next();
+		});
 	}
 };
