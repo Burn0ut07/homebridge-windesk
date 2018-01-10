@@ -1,6 +1,6 @@
 const request = require('request')
 const url = require('url')
-const exec = require('child_process')
+const { exec } = require('child_process')
 var Service, Characteristic;
 
 module.exports = function (homebridge) {
@@ -47,11 +47,10 @@ class windesk {
         },
         function (error, response, body) {
             if (error) {
-                me.log('STATUS: ', response && response.statusCode);
-                me.log(error.message);
+                me.log('STATUS:', response && response.statusCode);
+                me.log('GET Error message:', error.message);
 
-                if (error.code === 'ETIMEDOUT') {
-                    me.log("Error obj keys: ", Object.keys(error));
+                if (error.code === 'ETIMEDOUT' && error.connect === true) {
                     return next(null, false);
                 } else {
                     return next(error);
@@ -86,8 +85,8 @@ class windesk {
             },
             function (error, response) {
                 if (error) {
-                    me.log('STATUS: ', response && response.statusCode);
-                    me.log(error.message);
+                    me.log('STATUS:', response && response.statusCode);
+                    me.log('SET Error message', error.message);
                     return next(error);
                 }
 
