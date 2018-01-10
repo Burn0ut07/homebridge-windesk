@@ -57,7 +57,7 @@ class windesk {
                 }
             }
 
-            return next(null, resp.currentState);
+            return next(null, response.currentState);
         });
     }
 
