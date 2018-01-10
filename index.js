@@ -1,5 +1,6 @@
 const request = require('request')
 const url = require('url')
+const exec = require('child_process')
 var Service, Characteristic;
 
 module.exports = function (homebridge) {
@@ -13,7 +14,8 @@ class windesk {
         this.log = log;
         this.hostname = config['hostname'];
         this.port = config['port'];
-        this.endpoint = url.parse("http://" + this.hostname + ":" + this.port + "/device");
+        this.endpoint = url.parse(`http://${this.hostname}:${this.port}/device`);
+        this.wol_cmd = 'wakeonlan ' + config['mac'];
     }
 
     getServices() {
@@ -40,16 +42,21 @@ class windesk {
         request({
             url: me.endpoint,
             method: 'GET',
+            json: true,
+            timeout: 2000
         },
         function (error, response, body) {
             if (error) {
                 me.log('STATUS: ', response && response.statusCode);
                 me.log(error.message);
-                return next(error);
-            }
 
-            let resp = JSON.parse(body);
-            me.log('State: ' + resp.currentState);
+                if (error.code === 'ETIMEDOUT') {
+                    me.log("Error obj keys: ", Object.keys(error));
+                    return next(null, false);
+                } else {
+                    return next(error);
+                }
+            }
 
             return next(null, resp.currentState);
         });
@@ -58,22 +65,34 @@ class windesk {
     setSwitchOnCharacteristic(on, next) {
         const me = this;
 
-        me.log("On: " + on);
+        if (on) {
+            exec(me.wol_cmd, (err, stdout, stderr) => {
+                if (err) {
+                    return next(err);
+                }
 
-        request({
-            url: me.endpoint,
-            body: {'targetState': on},
-            method: 'POST',
-            headers: {'Content-type': 'application/json'}
-        },
-        function (error, response) {
-            if (error) {
-                me.log('STATUS: ', response && response.statusCode);
-                me.log(error.message);
-                return next(error);
-            }
+                me.log(`stdout: ${stdout}`);
+                me.log(`stderr: ${stderr}`);
+            });
 
             return next();
-        });
+        } else {
+            request({
+                url: me.endpoint,
+                body: {'targetState': on},
+                method: 'POST',
+                json: true,
+                timeout: 2000
+            },
+            function (error, response) {
+                if (error) {
+                    me.log('STATUS: ', response && response.statusCode);
+                    me.log(error.message);
+                    return next(error);
+                }
+
+                return next();
+            });
+        }
     }
 };
