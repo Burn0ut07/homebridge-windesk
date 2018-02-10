@@ -14,6 +14,7 @@ class windesk {
         this.log = log;
         this.hostname = config['hostname'];
         this.port = config['port'];
+        this.name = config['name'];
         this.endpoint = url.parse(`http://${this.hostname}:${this.port}/device`);
         this.wol_cmd = 'wakeonlan ' + config['mac'];
     }
@@ -25,7 +26,7 @@ class windesk {
             .setCharacteristic(Characteristic.Model, "W10")
             .setCharacteristic(Characteristic.SerialNumber, "123-456-789");
 
-        let switchService = new Service.Switch("Windesk Switch");
+        let switchService = new Service.Switch(this.name);
         switchService
             .getCharacteristic(Characteristic.On)
                 .on('get', this.getSwitchOnCharacteristic.bind(this))
@@ -43,6 +44,7 @@ class windesk {
             url: me.endpoint,
             method: 'GET',
             json: true,
+            agent: false,
             timeout: 2000
         },
         function (error, response, body) {
@@ -81,6 +83,7 @@ class windesk {
                 body: {'targetState': on},
                 method: 'POST',
                 json: true,
+                agent: false,
                 timeout: 2000
             },
             function (error, response) {
